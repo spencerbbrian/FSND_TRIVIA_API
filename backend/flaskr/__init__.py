@@ -165,36 +165,40 @@ def create_app(test_config=None):
         body = request.get_json()
 
         if not body:
-            abort(400, {'message': 'Please provide a JSON body with previous question Ids and optional category.'})
-    
+            abort(400)
+        
+        #Retrieve JSON data
         previous_questions = body.get('previous_questions', None)
         current_category = body.get('quiz_category', None)
 
+        #Play quiz with no previous questions
         if not previous_questions:
             if current_category and current_category['id']!=0:
-                questions_raw = (Question.query
+                quiz_questions = (Question.query
                     .filter(Question.category == str(current_category['id']))
                     .all())
             else:
-                questions_raw = (Question.query.all())    
+                quiz_questions = (Question.query.all())
+        #Filter previous questions and play
         else:
             if current_category and current_category['id']!=0:
-                questions_raw = (Question.query
+                quiz_questions = (Question.query
                     .filter(Question.category == str(current_category['id']))
                     .filter(Question.id.notin_(previous_questions))
                     .all())
+            #Play quiz with no given category(play all)
             else:
-                questions_raw = (Question.query
+                quiz_questions = (Question.query
                     .filter(Question.id.notin_(previous_questions))
                     .all())
     
     # Format questions & get a random question
-        questions_formatted = [question.format() for question in questions_raw]
-        random_question = questions_formatted[random.randint(0, len(questions_formatted)-1)]
+        questions_formatted = [question.format() for question in quiz_questions]
+        quiz = questions_formatted[random.randint(0, len(questions_formatted)-1)]
     
         return jsonify({
             'success': True,
-            'question': random_question
+            'question': quiz
         })
 
     @app.errorhandler(404)
