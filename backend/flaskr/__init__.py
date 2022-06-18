@@ -34,7 +34,7 @@ def create_app(test_config=None):
         'GET,POST,PUT,DELETE,OPTIONS')
         return response
    
-    @app.route('/categories',methods = ['GET'])
+    @app.route('/categories', methods = ['GET'])
     def get_categories():
         categories = Category.query.all()
         categories_dict = {}
@@ -140,24 +140,55 @@ def create_app(test_config=None):
                 abort(422)
 
 
-    @app.route('/categories/<int:id>/questions', methods = ['GET'])
-    def get_categorized_questions(id):
+    @app.route('/categories/<int:category_id>/questions', methods = ['GET'])
+    def get_categorized_questions(category_id):
 
-        category = Category.query.filter_by(id=id).one_or_none()
+        #category = Category.query.filter_by(id=id).one_or_none()
 
-        if (category is None):
-            abort(400)
+        #if (category is None):
+            #abort(400)
+        # if category_id!=0:
+        #     selection = (Question.query.filter(Question.category == category_id)
+        #     .order_by(Question.id)
+        #     .all())
+        # else:
+        #     selection = (Question.query.order_by(Question.id).all())
+            
+        # paginated_questions = paginate_questions(request,selection)
 
-        selection = Question.query.filter_by(category=category.id).all()
-        paginated_questions = paginate_questions(request,selection)
+        # if not paginated_questions:
+        #     abort(404)
 
-        return jsonify({
-            'success':True,
-            'categorized_questions':paginated_questions,
-            'total_Questions':len(Question.query.all()),
-            'current_category':category.type
-        })
+        # return jsonify({
+        #     'success':True,
+        #     'categorized_questions':paginated_questions,
+        #     'total_Questions':len(selection),
+        #     'current_category': category_id
+        # })
+        try: 
+            page = request.args.get('page',1, type = int)
+            questions = (Question.query
+            .order_by(Question.id)
+            .filter(Question.category == category_id)
+            .paginate(page= page, per_page = QUESTIONS_PER_PAGE))
 
+            formatted_questions = [
+                question.format() for question in questions.items
+            ]
+            if len(formatted_questions) == 0:
+                abort(404)
+            else:
+                return jsonify({
+                    'success': True,
+                    'questions':formatted_questions,
+                    'total_questions':questions.total,
+                    'current_category':category_id
+                })
+        except Exception as e:
+            if '404' in str(e):
+                abort(404)
+            else:
+                abort(422)
 
     @app.route('/quizzes', methods=['POST'])
     def play_quiz():
