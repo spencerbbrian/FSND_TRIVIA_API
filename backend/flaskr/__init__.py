@@ -162,42 +162,56 @@ def create_app(test_config=None):
     @app.route('/quizzes', methods=['POST'])
     def play_quiz():
         body = request.get_json()
-
-        if not body:
-            abort(400)
         
         #Retrieve JSON data
         previous_questions = body.get('previous_questions', None)
         current_category = body.get('quiz_category', None)
 
         #Play quiz with no previous questions
-        if not previous_questions:
-            if current_category and current_category['id']!=0:
-                quiz_questions = (Question.query
-                    .filter(Question.category == str(current_category['id']))
-                    .all())
-            else:
-                quiz_questions = (Question.query.all())
-        #Filter previous questions and play
+        if ((current_category is None) or (previous_questions is None)):
+             abort(400)
+
+        # load questions all questions if "ALL" is selected
+        if (current_category['id'] == 0):
+            questions = Question.query.all()
+        # load questions for given category
         else:
-            if current_category and current_category['id']!=0:
-                quiz_questions = (Question.query
-                    .filter(Question.category == str(current_category['id']))
-                    .filter(Question.id.notin_(previous_questions))
-                    .all())
-            #Play quiz with no given category(play all)
-            else:
-                quiz_questions = (Question.query
-                    .filter(Question.id.notin_(previous_questions))
-                    .all())
-    
-    # Format questions & get a random question
-        questions_formatted = [question.format() for question in quiz_questions]
-        quiz = questions_formatted[random.randint(0, len(questions_formatted)-1)]
-    
+            questions = Question.query.filter_by(category=current_category['id']).all()
+
+        # get total number of questions
+        total = len(questions)
+
+        # picks a random question
+        def get_random_question():
+            return questions[random.randrange(0, len(questions), 1)]
+
+        # checks to see if question has already been used
+        def check_if_used(question):
+            used = False
+            for q in previous_questions:
+                if (q == question.id):
+                    used = True
+
+            return used
+
+        # get random question
+        question = get_random_question()
+
+        # check if used, execute until unused question found
+        while (check_if_used(question)):
+            question = get_random_question()
+
+            # if all questions have been tried, return without question
+            # necessary if category has <5 questions
+            if (len(previous_questions) == total):
+                return jsonify({
+                    'success': True
+                })
+
+        # return the question
         return jsonify({
             'success': True,
-            'question': quiz
+            'question': question.format()
         })
 
     @app.errorhandler(404)
