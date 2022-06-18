@@ -105,13 +105,13 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'],False)
         self.assertEqual(data['message'],'unprocessable')
 
-    # def test_delete_question(self):
-    #     res = self.client().delete('/questions/22')
-    #     data = json.loads(res.data)
+    def test_delete_question(self):
+        res = self.client().delete('/questions/22')
+        data = json.loads(res.data)
 
-    #     self.assertEqual(res.status_code,200)
-    #     self.assertTrue(data['success'])
-    #     self.assertEqual(data['deleted'],22)
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertEqual(data['deleted'],22)
 
     def test_new_search(self):
         search_term = {
@@ -160,6 +160,40 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code,405)
         self.assertEqual(data['success'],False)
         self.assertEqual(data['message'],'method not allowed')
+
+    def test_play_quiz(self):
+        json_data = {
+            'previous_questions' : [15,8,21],
+            'quiz_category':{'id' : '3', 'type':'Science'}
+        }
+        res = self.client().post('/quizzes', json = json_data)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['question'])
+        self.assertTrue(data['question']['id'] not in json_data['previous_questions'])
+    
+    def test_error_play_quiz_no_json_data(self):
+        res = self.client().post('/quizzes',json = {})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code,400)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],'bad request')
+    
+    def test_error_play_quiz_bad_method(self):
+        json_data = {
+            'previous_questions' : [15,8,21],
+            'quiz_category':{'id' : '3', 'type':'Science'}
+        }
+        res = self.client().patch('/quizzes', json = json_data)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code,405)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],'method not allowed')
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
