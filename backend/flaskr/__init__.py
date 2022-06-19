@@ -142,29 +142,6 @@ def create_app(test_config=None):
 
     @app.route('/categories/<int:category_id>/questions', methods = ['GET'])
     def get_categorized_questions(category_id):
-
-        #category = Category.query.filter_by(id=id).one_or_none()
-
-        #if (category is None):
-            #abort(400)
-        # if category_id!=0:
-        #     selection = (Question.query.filter(Question.category == category_id)
-        #     .order_by(Question.id)
-        #     .all())
-        # else:
-        #     selection = (Question.query.order_by(Question.id).all())
-            
-        # paginated_questions = paginate_questions(request,selection)
-
-        # if not paginated_questions:
-        #     abort(404)
-
-        # return jsonify({
-        #     'success':True,
-        #     'categorized_questions':paginated_questions,
-        #     'total_Questions':len(selection),
-        #     'current_category': category_id
-        # })
         try: 
             page = request.args.get('page',1, type = int)
             questions = (Question.query
